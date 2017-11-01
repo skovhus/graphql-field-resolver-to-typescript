@@ -112,16 +112,6 @@ export class Renderer {
    */
   render(root: { data: IntrospectionQuery }): string {
     const namespace = source`
-      type ID = string;
-      export type GraphqlField<Source, Args, Result, Ctx> =
-      | Result
-      | Promise<Result>
-      | ((
-          source: Source,
-          args: Args,
-          context: Ctx,
-          info: GraphQLResolveInfo
-        ) => Result | Promise<Result>)
 
 ${this.renderTypes(root.data.__schema.types)}
 ${this.renderArguments(
@@ -132,14 +122,9 @@ ${this.renderInputObjects(root.data.__schema.types)}
 ${this.renderEnums(root.data.__schema.types)}
 ${this.renderUnions(root.data.__schema.types)}
 ${this.renderInterfaces(root.data.__schema.types)}
-${this.renderDefaultResolvers(root.data.__schema.types)}
 `
 
-    return `
-      /* tslint:disable */
-      import {GraphQLResolveInfo} from "graphql";
-      ${namespace.replace(/^\s+$/gm, '')}
-    `
+    return `${namespace.replace(/^\s+$/gm, '')}`
   }
 
   /**
@@ -162,11 +147,9 @@ ${this.renderDefaultResolvers(root.data.__schema.types)}
   ): string {
     return source`
 ${this.renderComment(type.description)}
-export interface ${type.name}<Ctx> ${this.renderExtends(type)}{
+export interface ${type.name} ${this.renderExtends(type)}{
     ${this.renderTypename(type.name, all)}${OMIT_NEXT_NEWLINE}
-${type.fields
-      .map(field => this.renderMemberWithComment(field, type.name))
-      .join('\n')}
+${type.fields.map(field => this.renderMemberWithComment(field)).join('\n')}
 }
 `
   }
@@ -193,7 +176,7 @@ ${type.fields
    */
   renderExtends(type: IntrospectionObjectType): string {
     if (type.interfaces && type.interfaces.length > 0) {
-      const interfaces = type.interfaces.map(it => `${it.name}<Ctx>`).join(', ')
+      const interfaces = type.interfaces.map(it => `${it.name}`).join(', ')
       return `extends ${interfaces} `
     } else {
       return ''
@@ -203,29 +186,22 @@ ${type.fields
   /**
    * Render a member (field or method) and its doc-comment
    */
-  renderMemberWithComment(
-    field: IntrospectionField,
-    parentTypeName: string
-  ): string {
+  renderMemberWithComment(field: IntrospectionField): string {
     return source`
 ${this.renderComment(field.description)}
-${this.renderMember(field, parentTypeName)}
+${this.renderMember(field)}
 `
   }
 
   /**
    * Render a single field or method without doc-comment
    */
-  renderMember(field: IntrospectionField, parentTypeName: string) {
+  renderMember(field: IntrospectionField) {
     const optional = field.type.kind !== 'NON_NULL'
     const type = this.renderType(field.type, false)
-    const resultType = optional ? `${type} | undefined` : type
-    const argType = field.args.length
-      ? `${field.name}Args`
-      : this.renderArgumentType(field.args || [])
+    const resultType = optional ? `${type} | null` : type
     const name = optional ? field.name + '?' : field.name
-    const source = parentTypeName ? parentTypeName + '<Ctx>' : 'undefined'
-    return `${name}: GraphqlField<${source}, ${argType}, ${resultType}, Ctx>`
+    return `${name}: ${resultType}`
   }
 
   /**
@@ -234,10 +210,10 @@ ${this.renderMember(field, parentTypeName)}
    */
   renderType(type: IntrospectionTypeRef, optional: boolean): string {
     function maybeOptional(arg: any) {
-      return optional ? `(${arg} | undefined)` : arg
+      return optional ? `(${arg} | null)` : arg
     }
     function generic(arg: string): any {
-      return `${arg}<Ctx>`
+      return `${arg}`
     }
 
     if (isScalar(type)) {
@@ -311,12 +287,7 @@ ${this.renderMember(field, parentTypeName)}
 ${this.renderComment(type.description)}
 export type ${type.name} = ${type.enumValues
       .map(value => `'${value.name}'`)
-      .join(' | ')}
-export const ${type.name}: { ${type.enumValues
-      .map(value => this.renderEnumValueType(value))
-      .join(' ')} } = { ${type.enumValues
-      .map(value => this.renderEnumValue(value))
-      .join(' ')}}`
+      .join(' | ')}`
   }
 
   /**
@@ -355,11 +326,11 @@ ${value.name}: '${value.name}',
   renderUnion(type: IntrospectionUnionType): string {
     // Scalars cannot be used in unions, so we're safe here
     const unionValues = type.possibleTypes
-      .map(type => `${type.name}<Ctx>`)
+      .map(type => `${type.name}`)
       .join(' | ')
     return source`
 ${this.renderComment(type.description)}
-export type ${type.name}<Ctx> = ${unionValues}
+export type ${type.name} = ${unionValues}
 
 `
   }
@@ -381,10 +352,8 @@ export type ${type.name}<Ctx> = ${unionValues}
   renderInterface(type: IntrospectionInterfaceType): string {
     return source`
 ${this.renderComment(type.description)}
-export interface ${type.name}<Ctx> {
-    ${type.fields
-      .map(field => this.renderMemberWithComment(field, type.name))
-      .join('\n')}
+export interface ${type.name} {
+    ${type.fields.map(field => this.renderMemberWithComment(field)).join('\n')}
 }
 `
   }
@@ -426,7 +395,7 @@ ${type.args.map(renderArg).join('\n')}
       if (isNonNull(typeRef) || isList(typeRef)) {
         if (typeRef.ofType && isNamed(typeRef.ofType)) {
           return typeRef.ofType.kind === 'SCALAR'
-            ? typeRef.ofType.name
+            ? scalars[typeRef.ofType.name]
             : typeRef.ofType.kind
         }
       }
@@ -488,34 +457,5 @@ ${this.renderInputMember(field)}
     const optional = field.type.kind !== 'NON_NULL'
     const name = optional ? field.name + '?' : field.name
     return `${name}: ${type}`
-  }
-
-  /**
-   * Render a default resolver that implements resolveType for all unions and interfaces.
-   */
-  renderDefaultResolvers(types: IntrospectionType[]): string {
-    const resolvers = types
-      .filter(type => !this.introspectionTypes.has(type.name))
-      .filter(type => type.kind === 'UNION' || type.kind === 'INTERFACE')
-      .map((type: IntrospectionUnionType | IntrospectionInterfaceType) =>
-        this.renderResolver(type)
-      )
-      .join(',\n')
-    return source`\n
-export const defaultResolvers = {
-${resolvers}
-};`
-  }
-
-  /**
-   * Renders a single resolver.
-   */
-  renderResolver(type: IntrospectionType): string {
-    return source`
-    ${type.name}: {
-        __resolveType(obj) {
-            return obj.__typename
-        }
-    }`
   }
 }
