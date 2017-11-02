@@ -200,8 +200,7 @@ ${this.renderMember(field)}
     const optional = field.type.kind !== 'NON_NULL'
     const type = this.renderType(field.type, false)
     const resultType = optional ? `${type} | null` : type
-    const name = optional ? field.name + '?' : field.name
-    return `${name}: ${resultType}`
+    return `${field.name}: ${resultType}`
   }
 
   /**

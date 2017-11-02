@@ -2,7 +2,7 @@
 
 exports[`should handle arguments.graphql correctly 1`] = `
 "export interface Query {
-  field1?: string | null
+  field1: string | null
 }
 
 export interface field1Args {
@@ -15,7 +15,7 @@ export interface field1Args {
 exports[`should handle enum.graphql correctly 1`] = `
 "export interface Query {
   state: STATE
-  optionalState?: STATE | null
+  optionalState: STATE | null
 }
 
 export interface stateArgs {}
@@ -35,14 +35,14 @@ export interface Human extends Character {
   __typename: 'Human'
   id: string
   name: string
-  friends?: (Character | null)[] | null
+  friends: (Character | null)[] | null
 }
 
 export interface Droid extends Character, Functional {
   __typename: 'Droid'
   id: string
   name: string
-  primaryFunction?: string | null
+  primaryFunction: string | null
 }
 
 export interface charactersArgs {}
@@ -55,24 +55,24 @@ export interface Character {
   name: string
 }
 export interface Functional {
-  primaryFunction?: string | null
+  primaryFunction: string | null
 }
 "
 `;
 
 exports[`should handle mutation.graphql correctly 1`] = `
 "export interface Query {
-  values?: (KeyValue | null)[] | null
+  values: (KeyValue | null)[] | null
 }
 
 export interface KeyValue {
   key: string
-  value?: string | null
+  value: string | null
 }
 
 export interface Mutation {
-  simpleMutation?: (KeyValue | null)[] | null
-  commandMutation?: (KeyValue | null)[] | null
+  simpleMutation: (KeyValue | null)[] | null
+  commandMutation: (KeyValue | null)[] | null
 }
 
 export interface valuesArgs {}
@@ -99,13 +99,13 @@ export interface SetValueCommand {
 exports[`should handle required.graphql correctly 1`] = `
 "export interface Query {
   requiredStringField: string
-  optionalStringField?: string | null
+  optionalStringField: string | null
   requiredIntField: number
   requiredObjectField: A
   requiredListOfOptionals: (string | null)[]
-  optionalListOfOptionals?: (string | null)[] | null
+  optionalListOfOptionals: (string | null)[] | null
   requiredListOfRequired: string[]
-  optionalListOfRequired?: string[] | null
+  optionalListOfRequired: string[] | null
 }
 
 export interface A {
@@ -132,11 +132,11 @@ export interface optionalListOfRequiredArgs {}
 
 exports[`should handle scalars.graphql correctly 1`] = `
 "export interface Query {
-  stringField?: string | null
-  booleanField?: boolean | null
-  intField?: number | null
-  floatField?: number | null
-  idField?: string | null
+  stringField: string | null
+  booleanField: boolean | null
+  intField: number | null
+  floatField: number | null
+  idField: string | null
 }
 
 export interface stringFieldArgs {}
@@ -156,11 +156,11 @@ exports[`should handle simpleSchema.graphql correctly 1`] = `
   /**
      * A field description
      */
-  field1?: TypeA | null
+  field1: TypeA | null
   /**
      * Another field description
      */
-  field2?: TypeB | null
+  field2: TypeB | null
 }
 
 /**
@@ -168,15 +168,15 @@ exports[`should handle simpleSchema.graphql correctly 1`] = `
  * Multiline description
  */
 export interface TypeA {
-  name?: string | null
-  size?: number | null
+  name: string | null
+  size: number | null
 }
 
 /**
  * Another more complex type
  */
 export interface TypeB {
-  nested?: (TypeA | null)[] | null
+  nested: (TypeA | null)[] | null
 }
 
 export interface field1Args {}

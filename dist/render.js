@@ -102,9 +102,7 @@ ${this.renderInterfaces(root.data.__schema.types)}
 ${this.renderComment(type.description)}
 export interface ${type.name} ${this.renderExtends(type)}{
     ${this.renderTypename(type.name, all)}${renderTag_1.OMIT_NEXT_NEWLINE}
-${type.fields
-            .map(field => this.renderMemberWithComment(field))
-            .join('\n')}
+${type.fields.map(field => this.renderMemberWithComment(field)).join('\n')}
 }
 `;
     }
@@ -149,8 +147,7 @@ ${this.renderMember(field)}
         const optional = field.type.kind !== 'NON_NULL';
         const type = this.renderType(field.type, false);
         const resultType = optional ? `${type} | null` : type;
-        const name = optional ? field.name + '?' : field.name;
-        return `${name}: ${resultType}`;
+        return `${field.name}: ${resultType}`;
     }
     /**
      * Render a single return type (or field type)
@@ -282,9 +279,7 @@ export type ${type.name} = ${unionValues}
         return renderTag_1.source `
 ${this.renderComment(type.description)}
 export interface ${type.name} {
-    ${type.fields
-            .map(field => this.renderMemberWithComment(field))
-            .join('\n')}
+    ${type.fields.map(field => this.renderMemberWithComment(field)).join('\n')}
 }
 `;
     }
